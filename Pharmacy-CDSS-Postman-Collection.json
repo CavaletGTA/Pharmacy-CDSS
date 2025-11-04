@@ -1,0 +1,377 @@
+{
+	"info": {
+		"_postman_id": "pharmacy-cdss-api-tests",
+		"name": "Pharmacy CDSS API",
+		"description": "Complete API testing collection for Pharmacy Clinical Decision Support System",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health & Status",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						}
+					}
+				},
+				{
+					"name": "Metrics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/metrics",
+							"host": ["{{baseUrl}}"],
+							"path": ["metrics"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.user) {",
+									"        pm.environment.set('userId', jsonData.data.user.userId);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test.pharmacist@pharmacy.ca\",\n  \"password\": \"SecurePassword123!\",\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Smith\",\n  \"role\": \"pharmacist\",\n  \"pharmacyId\": \"550e8400-e29b-41d4-a716-446655440000\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "{{apiVersion}}", "auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.token) {",
+									"        pm.environment.set('authToken', jsonData.data.token);",
+									"        console.log('Token saved:', jsonData.data.token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test.pharmacist@pharmacy.ca\",\n  \"password\": \"SecurePassword123!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "{{apiVersion}}", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/auth/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "{{apiVersion}}", "auth", "me"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Prescriptions",
+			"item": [
+				{
+					"name": "Check Prescription (Basic)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.checkId) {",
+									"        pm.environment.set('lastCheckId', jsonData.data.checkId);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"prescription\": {\n    \"din\": \"02242705\",\n    \"drugName\": \"Metformin 500mg\",\n    \"genericName\": \"Metformin HCl\",\n    \"strength\": \"500mg\",\n    \"dosageForm\": \"tablet\",\n    \"quantity\": 90,\n    \"daysSupply\": 30,\n    \"sigText\": \"Take 1 tablet by mouth twice daily with meals\",\n    \"sigStructured\": {\n      \"dose\": 1,\n      \"unit\": \"tablet\",\n      \"route\": \"oral\",\n      \"frequency\": \"twice daily\",\n      \"timing\": \"with meals\"\n    },\n    \"isActive\": true\n  },\n  \"patientProfile\": {\n    \"externalPatientId\": \"PT-12345\",\n    \"demographics\": {\n      \"firstName\": \"John\",\n      \"lastName\": \"Patient\",\n      \"dateOfBirth\": \"1960-05-15\",\n      \"ageYears\": 64,\n      \"gender\": \"male\",\n      \"weightKg\": 85,\n      \"heightCm\": 175\n    },\n    \"medications\": [\n      {\n        \"din\": \"02240907\",\n        \"drugName\": \"Gliclazide 30mg MR\",\n        \"strength\": \"30mg\",\n        \"sigText\": \"Take 1 tablet daily with breakfast\",\n        \"isActive\": true\n      }\n    ],\n    \"allergies\": [\n      {\n        \"allergenName\": \"Penicillin\",\n        \"allergenType\": \"drug\",\n        \"reaction\": \"Rash, hives\",\n        \"severity\": \"moderate\",\n        \"isActive\": true\n      }\n    ],\n    \"conditions\": [\n      {\n        \"conditionName\": \"Type 2 Diabetes Mellitus\",\n        \"conditionCode\": \"E11\",\n        \"diagnosisDate\": \"2018-03-15\",\n        \"isActive\": true\n      },\n      {\n        \"conditionName\": \"Hypertension\",\n        \"conditionCode\": \"I10\",\n        \"isActive\": true\n      }\n    ],\n    \"labValues\": [\n      {\n        \"testName\": \"Serum Creatinine\",\n        \"value\": 1.2,\n        \"unit\": \"mg/dL\",\n        \"testDate\": \"2025-10-15\",\n        \"referenceRange\": \"0.6-1.2\"\n      }\n    ]\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/prescriptions/check",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "{{apiVersion}}", "prescriptions", "check"]
+						}
+					}
+				},
+				{
+					"name": "Check Prescription (Interaction Test)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"prescription\": {\n    \"din\": \"02230814\",\n    \"drugName\": \"Warfarin 5mg\",\n    \"strength\": \"5mg\",\n    \"sigText\": \"Take 1 tablet daily\",\n    \"sigStructured\": {\n      \"dose\": 1,\n      \"unit\": \"tablet\",\n      \"frequency\": \"once daily\"\n    }\n  },\n  \"patientProfile\": {\n    \"externalPatientId\": \"PT-67890\",\n    \"demographics\": {\n      \"ageYears\": 72,\n      \"gender\": \"female\",\n      \"weightKg\": 65\n    },\n    \"medications\": [\n      {\n        \"din\": \"02247074\",\n        \"drugName\": \"Aspirin 81mg\",\n        \"strength\": \"81mg\",\n        \"sigText\": \"Take 1 tablet daily\",\n        \"isActive\": true\n      }\n    ],\n    \"allergies\": [],\n    \"conditions\": [\n      {\n        \"conditionName\": \"Atrial Fibrillation\",\n        \"isActive\": true\n      }\n    ]\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/prescriptions/check",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "{{apiVersion}}", "prescriptions", "check"]
+						}
+					}
+				},
+				{
+					"name": "Check Prescription (Allergy Alert)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"prescription\": {\n    \"din\": \"02243085\",\n    \"drugName\": \"Amoxicillin 500mg\",\n    \"strength\": \"500mg\",\n    \"sigText\": \"Take 1 capsule three times daily\"\n  },\n  \"patientProfile\": {\n    \"externalPatientId\": \"PT-99999\",\n    \"demographics\": {\n      \"ageYears\": 45\n    },\n    \"medications\": [],\n    \"allergies\": [\n      {\n        \"allergenName\": \"Penicillin\",\n        \"reaction\": \"Anaphylaxis\",\n        \"severity\": \"severe\",\n        \"isActive\": true\n      }\n    ],\n    \"conditions\": []\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/prescriptions/check",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "{{apiVersion}}", "prescriptions", "check"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Alerts",
+			"item": [
+				{
+					"name": "Get All Alerts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/alerts?limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "{{apiVersion}}", "alerts"],
+							"query": [
+								{
+									"key": "severity",
+									"value": "critical",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "active",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Alert by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/alerts/ALERT-ID-HERE",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "{{apiVersion}}", "alerts", "ALERT-ID-HERE"]
+						}
+					}
+				},
+				{
+					"name": "Update Alert Status",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"acknowledged\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/alerts/ALERT-ID-HERE/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "{{apiVersion}}", "alerts", "ALERT-ID-HERE", "status"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Interventions",
+			"item": [
+				{
+					"name": "Log Intervention",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"alertId\": \"ALERT-ID-HERE\",\n  \"interventionType\": \"prescriber_contacted\",\n  \"actionTaken\": \"Called Dr. Smith, dose adjusted\",\n  \"outcome\": \"dose_changed\",\n  \"clinicalNote\": \"Reduced metformin from 1000mg BID to 500mg BID due to CrCl 45 mL/min\",\n  \"timeSpentMinutes\": 5,\n  \"prescriberContacted\": {\n    \"name\": \"Dr. John Smith\",\n    \"contactMethod\": \"phone\",\n    \"responseReceived\": true\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/interventions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "{{apiVersion}}", "interventions"]
+						}
+					}
+				},
+				{
+					"name": "Get Interventions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/{{apiVersion}}/interventions?limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "{{apiVersion}}", "interventions"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "apiVersion",
+			"value": "v1",
+			"type": "string"
+		}
+	]
+}

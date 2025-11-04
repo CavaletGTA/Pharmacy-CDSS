@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacy CDSS - API Test Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .status.connected {
+            background: #4caf50;
+            color: white;
+        }
+
+        .status.disconnected {
+            background: #f44336;
+            color: white;
+        }
+
+        .status.pending {
+            background: #ff9800;
+            color: white;
+        }
+
+        #response {
+            background: #f5f5f5;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            min-height: 200px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+
+        .alert {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .alert.critical {
+            background: #ffebee;
+            border-color: #f44336;
+            color: #c62828;
+        }
+
+        .alert.significant {
+            background: #fff3e0;
+            border-color: #ff9800;
+            color: #e65100;
+        }
+
+        .alert.info {
+            background: #e3f2fd;
+            border-color: #2196f3;
+            color: #1565c0;
+        }
+
+        .input-group {
+            margin: 15px 0;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 Pharmacy CDSS - Test Interface</h1>
+
+        <!-- Status Card -->
+        <div class="card">
+            <h2>System Status</h2>
+            <p>Backend: <span id="serverStatus" class="status disconnected">Checking...</span></p>
+            <p>Auth: <span id="authStatus" class="status disconnected">Not Logged In</span></p>
+            <div class="stats" id="stats" style="display: none;">
+                <div class="stat-card">
+                    <div class="stat-label">Checks Run</div>
+                    <div class="stat-value" id="checksCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Alerts Generated</div>
+                    <div class="stat-value" id="alertsCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg Response Time</div>
+                    <div class="stat-value" id="avgTime">0ms</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Authentication Card -->
+        <div class="card">
+            <h2>1. Authentication</h2>
+            <div class="input-group">
+                <label>Email:</label>
+                <input type="email" id="email" value="test.pharmacist@pharmacy.ca">
+            </div>
+            <div class="input-group">
+                <label>Password:</label>
+                <input type="password" id="password" value="SecurePassword123!">
+            </div>
+            <div class="button-group">
+                <button onclick="register()">Register User</button>
+                <button onclick="login()">Login</button>
+                <button onclick="getProfile()" id="getProfileBtn" disabled>Get Profile</button>
+            </div>
+        </div>
+
+        <!-- Prescription Testing Card -->
+        <div class="card">
+            <h2>2. Test Prescription Checking (Core Feature)</h2>
+            <div class="button-group">
+                <button onclick="testBasicPrescription()" id="testBasicBtn" disabled>Basic Check</button>
+                <button onclick="testInteraction()" id="testInteractionBtn" disabled>Test Interaction</button>
+                <button onclick="testAllergy()" id="testAllergyBtn" disabled>Test Allergy Alert</button>
+                <button onclick="testDosage()" id="testDosageBtn" disabled>Test Dosage</button>
+            </div>
+        </div>
+
+        <!-- Alerts Card -->
+        <div class="card">
+            <h2>3. View Alerts</h2>
+            <div class="button-group">
+                <button onclick="getAlerts()" id="getAlertsBtn" disabled>Get All Alerts</button>
+                <button onclick="getCriticalAlerts()" id="getCriticalBtn" disabled>Critical Alerts Only</button>
+            </div>
+        </div>
+
+        <!-- Response Card -->
+        <div class="card">
+            <h2>Response</h2>
+            <div id="response">Click a button to test the API...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api/v1';
+        let authToken = null;
+        let stats = { checks: 0, alerts: 0, totalTime: 0 };
+
+        // Check server status on load
+        window.onload = async () => {
+            try {
+                const res = await fetch('http://localhost:3000/health');
+                const data = await res.json();
+                document.getElementById('serverStatus').textContent = 'Connected';
+                document.getElementById('serverStatus').className = 'status connected';
+                displayResponse('Server health check passed!\n\n' + JSON.stringify(data, null, 2));
+            } catch (err) {
+                document.getElementById('serverStatus').textContent = 'Disconnected';
+                document.getElementById('serverStatus').className = 'status disconnected';
+                displayResponse('❌ Cannot connect to server.\n\nMake sure backend is running:\ncd backend && npm run dev\n\nOr with Docker:\ndocker-compose up -d');
+            }
+        };
+
+        function displayResponse(text, isJSON = false) {
+            const responseDiv = document.getElementById('response');
+            if (isJSON) {
+                try {
+                    const obj = typeof text === 'string' ? JSON.parse(text) : text;
+                    responseDiv.textContent = JSON.stringify(obj, null, 2);
+                } catch (e) {
+                    responseDiv.textContent = text;
+                }
+            } else {
+                responseDiv.textContent = text;
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('checksCount').textContent = stats.checks;
+            document.getElementById('alertsCount').textContent = stats.alerts;
+            document.getElementById('avgTime').textContent = Math.round(stats.totalTime / stats.checks) + 'ms';
+            document.getElementById('stats').style.display = 'grid';
+        }
+
+        async function register() {
+            try {
+                displayResponse('Registering user...');
+                const res = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('email').value,
+                        password: document.getElementById('password').value,
+                        firstName: 'Test',
+                        lastName: 'Pharmacist',
+                        role: 'pharmacist',
+                        pharmacyId: '550e8400-e29b-41d4-a716-446655440000'
+                    })
+                });
+                const data = await res.json();
+                displayResponse('✅ Registration successful!\n\n' + JSON.stringify(data, null, 2));
+            } catch (err) {
+                displayResponse('❌ Registration failed:\n' + err.message);
+            }
+        }
+
+        async function login() {
+            try {
+                displayResponse('Logging in...');
+                const res = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('email').value,
+                        password: document.getElementById('password').value
+                    })
+                });
+                const data = await res.json();
+
+                if (data.success && data.data.token) {
+                    authToken = data.data.token;
+                    document.getElementById('authStatus').textContent = 'Logged In';
+                    document.getElementById('authStatus').className = 'status connected';
+
+                    // Enable all test buttons
+                    document.querySelectorAll('button[id$="Btn"]').forEach(btn => btn.disabled = false);
+
+                    displayResponse('✅ Login successful!\n\nToken saved. You can now test prescriptions.\n\n' + JSON.stringify(data, null, 2));
+                } else {
+                    displayResponse('❌ Login failed:\n' + JSON.stringify(data, null, 2));
+                }
+            } catch (err) {
+                displayResponse('❌ Login error:\n' + err.message);
+            }
+        }
+
+        async function getProfile() {
+            try {
+                displayResponse('Fetching profile...');
+                const res = await fetch(`${API_BASE}/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await res.json();
+                displayResponse('✅ User Profile:\n\n' + JSON.stringify(data, null, 2));
+            } catch (err) {
+                displayResponse('❌ Error:\n' + err.message);
+            }
+        }
+
+        async function testBasicPrescription() {
+            try {
+                const startTime = Date.now();
+                displayResponse('Testing prescription check...');
+
+                const res = await fetch(`${API_BASE}/prescriptions/check`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        prescription: {
+                            din: '02242705',
+                            drugName: 'Metformin 500mg',
+                            strength: '500mg',
+                            sigText: 'Take 1 tablet twice daily'
+                        },
+                        patientProfile: {
+                            externalPatientId: 'PT-TEST-001',
+                            demographics: { ageYears: 65, gender: 'male' },
+                            medications: [],
+                            allergies: [],
+                            conditions: [{ conditionName: 'Type 2 Diabetes', isActive: true }]
+                        }
+                    })
+                });
+
+                const data = await res.json();
+                const responseTime = Date.now() - startTime;
+
+                stats.checks++;
+                stats.totalTime += responseTime;
+                if (data.data && data.data.alertsGenerated) {
+                    stats.alerts += data.data.alertsGenerated;
+                }
+                updateStats();
+
+                displayResponse(`✅ Prescription Check Complete!\n\n⏱️  Response Time: ${responseTime}ms\n📊 Alerts Generated: ${data.data?.alertsGenerated || 0}\n\n` + JSON.stringify(data, null, 2));
+            } catch (err) {
+                displayResponse('❌ Error:\n' + err.message);
+            }
+        }
+
+        async function testInteraction() {
+            try {
+                displayResponse('Testing drug interaction detection...');
+                const res = await fetch(`${API_BASE}/prescriptions/check`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        prescription: {
+                            drugName: 'Warfarin 5mg',
+                            din: '02230814'
+                        },
+                        patientProfile: {
+                            externalPatientId: 'PT-002',
+                            demographics: { ageYears: 72, gender: 'female' },
+                            medications: [
+                                { drugName: 'Aspirin 81mg', din: '02247074', isActive: true }
+                            ],
+                            allergies: [],
+                            conditions: []
+                        }
+                    })
+                });
+                const data = await res.json();
+                displayResponse('✅ Interaction Test Complete!\n\n' + JSON.stringify(data, null, 2));
+            } catch (err) {
+                displayResponse('❌ Error:\n' + err.message);
+            }
+        }
+
+        async function testAllergy() {
+            try {
+                displayResponse('Testing allergy alert...');
+                const res = await fetch(`${API_BASE}/prescriptions/check`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        prescription: {
+                            drugName: 'Amoxicillin 500mg'
+                        },
+                        patientProfile: {
+                            externalPatientId: 'PT-003',
+                            demographics: { ageYears: 45 },
+                            medications: [],
+                            allergies: [
+                                { allergenName: 'Penicillin', severity: 'severe', isActive: true }
+                            ],
+                            conditions: []
+                        }
+                    })
+                });
+                const data = await res.json();
+                displayResponse('✅ Allergy Test Complete!\n\n' + JSON.stringify(data, null, 2));
+            } catch (err) {
+                displayResponse('❌ Error:\n' + err.message);
+            }
+        }
+
+        async function testDosage() {
+            try {
+                displayResponse('Testing dosage validation...');
+                const res = await fetch(`${API_BASE}/prescriptions/check`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        prescription: {
+                            drugName: 'Digoxin 0.25mg',
+                            sigStructured: { dose: 0.25, unit: 'mg', frequency: 'twice daily' }
+                        },
+                        patientProfile: {
+                            externalPatientId: 'PT-004',
+                            demographics: { ageYears: 85, weightKg: 55 },
+                            medications: [],
+                            allergies: [],
+                            conditions: [],
+                            labValues: [{ testName: 'Serum Creatinine', value: 1.8 }]
+                        }
+                    })
+                });
+                const data = await res.json();
+                displayResponse('✅ Dosage Test Complete!\n\n' + JSON.stringify(data, null, 2));
+            } catch (err) {
+                displayResponse('❌ Error:\n' + err.message);
+            }
+        }
+
+        async function getAlerts() {
+            try {
+                displayResponse('Fetching alerts...');
+                const res = await fetch(`${API_BASE}/alerts?limit=20`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await res.json();
+                displayResponse('✅ Alerts Retrieved:\n\n' + JSON.stringify(data, null, 2));
+            } catch (err) {
+                displayResponse('❌ Error:\n' + err.message);
+            }
+        }
+
+        async function getCriticalAlerts() {
+            try {
+                displayResponse('Fetching critical alerts...');
+                const res = await fetch(`${API_BASE}/alerts?severity=critical&status=active`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                const data = await res.json();
+                displayResponse('✅ Critical Alerts:\n\n' + JSON.stringify(data, null, 2));
+            } catch (err) {
+                displayResponse('❌ Error:\n' + err.message);
+            }
+        }
+    </script>
+</body>
+</html>

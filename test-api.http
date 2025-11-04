@@ -1,0 +1,300 @@
+###############################################################################
+# Pharmacy CDSS API Testing
+# Use this file with VS Code REST Client extension or copy to Postman
+###############################################################################
+
+@baseUrl = http://localhost:3000
+@apiVersion = v1
+
+### Health Check
+GET {{baseUrl}}/health
+
+### Metrics
+GET {{baseUrl}}/metrics
+
+###############################################################################
+# AUTHENTICATION
+###############################################################################
+
+### 1. Register a new pharmacist user
+POST {{baseUrl}}/api/{{apiVersion}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test.pharmacist@pharmacy.ca",
+  "password": "SecurePassword123!",
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "role": "pharmacist",
+  "pharmacyId": "550e8400-e29b-41d4-a716-446655440000"
+}
+
+### 2. Login (save the token from response)
+POST {{baseUrl}}/api/{{apiVersion}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "test.pharmacist@pharmacy.ca",
+  "password": "SecurePassword123!"
+}
+
+### Save token from login response
+@authToken = YOUR_JWT_TOKEN_HERE
+
+### 3. Get current user profile
+GET {{baseUrl}}/api/{{apiVersion}}/auth/me
+Authorization: Bearer {{authToken}}
+
+###############################################################################
+# PRESCRIPTION CHECKING - MAIN FEATURE
+###############################################################################
+
+### 4. Submit a prescription for checking
+# This tests the core rules engine!
+POST {{baseUrl}}/api/{{apiVersion}}/prescriptions/check
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "prescription": {
+    "din": "02242705",
+    "drugName": "Metformin 500mg",
+    "genericName": "Metformin HCl",
+    "strength": "500mg",
+    "dosageForm": "tablet",
+    "quantity": 90,
+    "daysSupply": 30,
+    "sigText": "Take 1 tablet by mouth twice daily with meals",
+    "sigStructured": {
+      "dose": 1,
+      "unit": "tablet",
+      "route": "oral",
+      "frequency": "twice daily",
+      "timing": "with meals"
+    },
+    "prescriber": {
+      "name": "Dr. John Doe",
+      "licenseNumber": "12345"
+    },
+    "isActive": true
+  },
+  "patientProfile": {
+    "externalPatientId": "PT-12345",
+    "demographics": {
+      "firstName": "John",
+      "lastName": "Patient",
+      "dateOfBirth": "1960-05-15",
+      "ageYears": 64,
+      "gender": "male",
+      "weightKg": 85,
+      "heightCm": 175
+    },
+    "medications": [
+      {
+        "din": "02240907",
+        "drugName": "Gliclazide 30mg MR",
+        "strength": "30mg",
+        "sigText": "Take 1 tablet daily with breakfast",
+        "isActive": true
+      }
+    ],
+    "allergies": [
+      {
+        "allergenName": "Penicillin",
+        "allergenType": "drug",
+        "reaction": "Rash, hives",
+        "severity": "moderate",
+        "isActive": true
+      }
+    ],
+    "conditions": [
+      {
+        "conditionName": "Type 2 Diabetes Mellitus",
+        "conditionCode": "E11",
+        "diagnosisDate": "2018-03-15",
+        "isActive": true
+      },
+      {
+        "conditionName": "Hypertension",
+        "conditionCode": "I10",
+        "isActive": true
+      }
+    ],
+    "labValues": [
+      {
+        "testName": "Serum Creatinine",
+        "value": 1.2,
+        "unit": "mg/dL",
+        "testDate": "2025-10-15",
+        "referenceRange": "0.6-1.2"
+      },
+      {
+        "testName": "HbA1c",
+        "value": 7.8,
+        "unit": "%",
+        "testDate": "2025-10-15"
+      }
+    ]
+  }
+}
+
+### 5. Test with potential drug interaction
+POST {{baseUrl}}/api/{{apiVersion}}/prescriptions/check
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "prescription": {
+    "din": "02230814",
+    "drugName": "Warfarin 5mg",
+    "strength": "5mg",
+    "sigText": "Take 1 tablet daily",
+    "sigStructured": {
+      "dose": 1,
+      "unit": "tablet",
+      "frequency": "once daily"
+    }
+  },
+  "patientProfile": {
+    "externalPatientId": "PT-67890",
+    "demographics": {
+      "ageYears": 72,
+      "gender": "female",
+      "weightKg": 65
+    },
+    "medications": [
+      {
+        "din": "02247074",
+        "drugName": "Aspirin 81mg",
+        "strength": "81mg",
+        "sigText": "Take 1 tablet daily",
+        "isActive": true
+      }
+    ],
+    "allergies": [],
+    "conditions": [
+      {
+        "conditionName": "Atrial Fibrillation",
+        "isActive": true
+      }
+    ]
+  }
+}
+
+### 6. Test allergy alert
+POST {{baseUrl}}/api/{{apiVersion}}/prescriptions/check
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "prescription": {
+    "din": "02243085",
+    "drugName": "Amoxicillin 500mg",
+    "strength": "500mg",
+    "sigText": "Take 1 capsule three times daily"
+  },
+  "patientProfile": {
+    "externalPatientId": "PT-99999",
+    "demographics": {
+      "ageYears": 45
+    },
+    "medications": [],
+    "allergies": [
+      {
+        "allergenName": "Penicillin",
+        "reaction": "Anaphylaxis",
+        "severity": "severe",
+        "isActive": true
+      }
+    ],
+    "conditions": []
+  }
+}
+
+###############################################################################
+# ALERTS
+###############################################################################
+
+### 7. Get all alerts (with filters)
+GET {{baseUrl}}/api/{{apiVersion}}/alerts?severity=critical&status=active&limit=20
+Authorization: Bearer {{authToken}}
+
+### 8. Get specific alert by ID
+GET {{baseUrl}}/api/{{apiVersion}}/alerts/ALERT-ID-HERE
+Authorization: Bearer {{authToken}}
+
+### 9. Update alert status
+PATCH {{baseUrl}}/api/{{apiVersion}}/alerts/ALERT-ID-HERE/status
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "status": "acknowledged"
+}
+
+### 10. Submit feedback for alert
+POST {{baseUrl}}/api/{{apiVersion}}/alerts/ALERT-ID-HERE/feedback
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "isRelevant": true,
+  "actionTaken": "Contacted prescriber",
+  "comments": "Dose reduced from 10mg to 5mg due to renal function"
+}
+
+###############################################################################
+# INTERVENTIONS
+###############################################################################
+
+### 11. Log an intervention
+POST {{baseUrl}}/api/{{apiVersion}}/interventions
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "alertId": "ALERT-ID-HERE",
+  "interventionType": "prescriber_contacted",
+  "actionTaken": "Called Dr. Smith, dose adjusted",
+  "outcome": "dose_changed",
+  "clinicalNote": "Reduced metformin from 1000mg BID to 500mg BID due to CrCl 45 mL/min",
+  "timeSpentMinutes": 5,
+  "prescriberContacted": {
+    "name": "Dr. John Smith",
+    "contactMethod": "phone",
+    "responseReceived": true
+  }
+}
+
+### 12. Get intervention statistics
+GET {{baseUrl}}/api/{{apiVersion}}/interventions/stats/summary?startDate=2025-01-01&endDate=2025-12-31
+Authorization: Bearer {{authToken}}
+
+###############################################################################
+# PATIENT PROFILE
+###############################################################################
+
+### 13. Submit/Update patient profile
+POST {{baseUrl}}/api/{{apiVersion}}/prescriptions/submit-profile
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "externalPatientId": "PT-12345",
+  "demographics": {
+    "firstName": "John",
+    "lastName": "Doe",
+    "dateOfBirth": "1960-05-15",
+    "healthCardNumber": "1234567890",
+    "province": "ON",
+    "gender": "male",
+    "weightKg": 85
+  },
+  "medications": [],
+  "allergies": [],
+  "conditions": []
+}
+
+### 14. Get patient check history
+GET {{baseUrl}}/api/{{apiVersion}}/prescriptions/patient/PT-12345/history?limit=10
+Authorization: Bearer {{authToken}}
